@@ -18,22 +18,22 @@ cd setuptools/scripts/
 ```
 Install 检测服务是否满足和安装依赖
 ```
-sh install_env.sh
+./install_env.sh
 ```
 install 安装docker
 ```
-sh install_docker.sh 
+./install_docker.sh 
 ```
 install 安装mariadb
 ```
-sh install_mariadb.sh
+./install_mariadb.sh
 ```
 install 安装redis
 ```
-sh install_redis.sh
+./install_redis.sh
 ```
 install 安装python3
 ```
-sh install_py3.sh
+./install_py3.sh
 
 ```

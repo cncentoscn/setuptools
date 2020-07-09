@@ -92,6 +92,10 @@ fi
         firewall-cmd --zone=public --add-port=443/tcp --permanent
         firewall-cmd --reload
     fi
+    if [ ! "$(firewall-cmd --list-all | grep 6379)" ]; then
+        firewall-cmd --zone=public --add-port=6379/tcp --permanent
+        firewall-cmd --reload
+    fi
 #ntp
 echo "server ntp.aliyun.com iburst" >> /etc/chrony.conf
 echo "service chrony"
@@ -104,7 +108,7 @@ exit 1
 }
 
 #操作系统检测
-echo -ne "CentOS7     Check \t........................ "
+echo -ne "CentOS7   Check \t........................ "
 if [ -f /etc/redhat-release ];then
   osVersion=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
   majorVersion=`echo $osVersion | awk -F. '{print $1}'`
