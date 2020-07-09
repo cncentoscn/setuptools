@@ -28,5 +28,7 @@ install 安装redis
 ```sh install_redis.sh
 ```
 install 安装python3
-```sh install_py3.sh
+```
+sh install_py3.sh
+
 ```
