@@ -15,17 +15,22 @@ cd /opt
 yum -y install  git
 git clone --depth=1 https://github.com/cncentoscn/setuptools.git
 cd setuptools/scripts/
+```
 Install 检测服务是否满足和安装依赖
-```sh install_env.sh
+```
+sh install_env.sh
 ```
 install 安装docker
-```sh install_docker.sh 
+```
+sh install_docker.sh 
 ```
 install 安装mariadb
-```sh install_mariadb.sh
+```
+sh install_mariadb.sh
 ```
 install 安装redis
-```sh install_redis.sh
+```
+sh install_redis.sh
 ```
 install 安装python3
 ```
