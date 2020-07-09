@@ -12,25 +12,30 @@ Use:
 
 ```
 cd /opt
-yum -y install wget git
-git clone --depth=1 https://github.com/jumpserver/setuptools.git
-cd setuptools
-cp config_example.conf config.conf
-vi config.conf
-./jmsctl.sh -h
+yum -y install  git
+git clone --depth=1 https://github.com/cncentoscn/setuptools.git
+cd setuptools/scripts/
+Install 检测服务是否满足和安装依赖
+```
+sh install_env.sh
 ```
 
-Install 安装
+install 安装docker
 ```
-./jmsctl.sh install
-```
-
-Uninstall 卸载
-```
-./jmsctl.sh uninstall
+sh install_docker.sh 
 ```
 
-Help 帮助
+
+install 安装mariadb
 ```
-./jmsctl.sh -h
+sh install_mariadb.sh
+```
+
+install 安装redis
+```
+sh install_redis.sh
+```
+install 安装python3
+```
+sh install_py3.sh
 ```
