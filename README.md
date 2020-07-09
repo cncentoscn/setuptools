@@ -1,6 +1,6 @@
-# Jumpserver 安装脚本
+# 自动安装脚本
 
-安装文档 https://docs.jumpserver.org/zh/master/install/setup_by_fast/
+安装文档 https://www.centoscn.vip/3178.html
 
 - 全新安装的 Centos7 (7.x)
 - 需要连接 互联网
