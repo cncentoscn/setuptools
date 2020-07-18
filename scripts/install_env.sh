@@ -72,6 +72,14 @@ fi
     if [ $? -ne 0 ];then
         yum install -y net-tools
     fi
+      which  chrony  >/dev/null 2>&1
+    if [ $? -ne 0 ];then
+        yum install -y  chrony 
+    fi
+     which  ntpdate  >/dev/null 2>&1
+    if [ $? -ne 0 ];then
+        yum install -y  ntpdate
+    fi
 # 禁用selinux
     sed -i 's/SELINUX=.*/SELINUX=permissive/g' /etc/selinux/config
     setenforce 0
@@ -100,17 +108,12 @@ fi
         firewall-cmd --zone=public --add-port=8080/tcp --permanent
         firewall-cmd --reload
     fi
-#ntp
+#时间同步
+cp -a /etc/chrony.conf /etc/chrony.conf.bak
+sed -i "s%^server%#server%g" /etc/chrony.conf
 echo "server ntp.aliyun.com iburst" >> /etc/chrony.conf
-echo "service chrony"
-{
-    systemctl restart chronyd
-    systemctl enable chronyd
-}|| {
-echo "chrony，启动失败"
-exit 1
-}
-
+systemctl start chronyd.service
+systemctl enable  chronyd.service
 #操作系统检测
 echo -ne "CentOS7   Check \t........................ "
 if [ -f /etc/redhat-release ];then
