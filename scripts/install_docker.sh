@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-#
+# coding: utf-8
+# Copyright (c) 2020
+# Gmail: lucky@centoscn.vip
+# blog:  www.centoscn.vip
 
 BASE_DIR=$(dirname "$0")
 
