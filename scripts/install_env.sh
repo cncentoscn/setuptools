@@ -108,11 +108,14 @@ fi
         firewall-cmd --zone=public --add-port=8080/tcp --permanent
         firewall-cmd --reload
     fi
+#关闭swap
+swapoff -a 
+sed -ri 's/.*swap.*/#&/' /etc/fstab
 #时间同步
 cp -a /etc/chrony.conf /etc/chrony.conf.bak
 sed -i "s%^server%#server%g" /etc/chrony.conf
 echo "server ntp.aliyun.com iburst" >> /etc/chrony.conf
-systemctl start chronyd.service
+systemctl restart chronyd.service
 systemctl enable  chronyd.service
 #操作系统检测
 echo -ne "CentOS7   Check \t........................ "
