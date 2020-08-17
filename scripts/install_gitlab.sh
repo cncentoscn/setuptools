@@ -26,17 +26,26 @@ fi
     if [ $? -ne 0 ];then
         yum install -y postfix
     fi
-#启动服务
-    if [ ! "$(systemctl status sshd | systemctl enable sshd|grep Active | grep running)" ]; then
-        start_sshd
+    which cronie  >/dev/null 2>&1
+    if [ $? -ne 0 ];then
+        yum install -y cronie 
     fi
-    if [ ! "$(systemctl status postfix |systemctl enable postfix| grep Active | grep running)" ]; then
-        start_postfix
+    which curl  >/dev/null 2>&1
+    if [ $? -ne 0 ];then
+        yum install -y curl 
     fi
+#安装源
+cat >> /etc/yum.repos.d/gitlab-ce.repo <<EOF
+[gitlab-ce]
+name=Gitlab CE Repository
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el$releasever/
+gpgcheck=0
+enabled=1
+EOF
 #安装gitlab
      which gitlab-ee >/dev/null 2>&1
     if [ $? -ne 0 ];then
-        yum install -y gitlab-ee
+        yum install -y gitlab-ce
     fi 
 #防火墙
     if [ ! "$(firewall-cmd --list-all | grep http)" ]; then
