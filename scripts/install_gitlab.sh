@@ -3,8 +3,16 @@
 # Copyright (c) 2020
 # Gmail: lucky@centoscn.vip
 # blog:  www.centoscn.vip
-#!/bin/bash
+flag=0
 
+echo -ne "User   Check \t........................ "
+isRoot=`id -u -n | grep root | wc -l`
+if [ "x$isRoot" == "x1" ];then
+  echo -e "[\033[32m OK \033[0m]"
+else
+  echo -e "[\033[31m ERROR \033[0m] 请用 root 用户执行安装脚本"
+  flag=1
+fi
 unknown_os ()
 {
   echo "Unfortunately, your operating system distribution and version are not supported by this script."
@@ -12,26 +20,10 @@ unknown_os ()
   echo "You can override the OS detection by setting os= and dist= prior to running this script."
   echo "You can find a list of supported OSes and distributions on our website: https://packages.gitlab.com/docs#os_distro_version"
   echo
-  echo "For example, to force Ubuntu Trusty: os=ubuntu dist=trusty ./script.sh"
+  echo "For example, to force CentOS 6: os=el dist=6 ./script.sh"
   echo
   echo "Please email support@packagecloud.io and let us know if you run into any issues."
   exit 1
-}
-
-gpg_check ()
-{
-  echo "Checking for gpg..."
-  if command -v gpg > /dev/null; then
-    echo "Detected gpg..."
-  else
-    echo "Installing gnupg for GPG verification..."
-    apt-get install -y gnupg
-    if [ "$?" -ne "0" ]; then
-      echo "Unable to install GPG! Your base system has a problem; please check your default OS's package repositories because GPG should work."
-      echo "Repository installation aborted."
-      exit 1
-    fi
-  fi
 }
 
 curl_check ()
@@ -41,21 +33,7 @@ curl_check ()
     echo "Detected curl..."
   else
     echo "Installing curl..."
-    apt-get install -q -y curl
-    if [ "$?" -ne "0" ]; then
-      echo "Unable to install curl! Your base system has a problem; please check your default OS's package repositories because curl should work."
-      echo "Repository installation aborted."
-      exit 1
-    fi
-  fi
-}
-
-install_debian_keyring ()
-{
-  if [ "${os}" = "debian" ]; then
-    echo "Installing debian-archive-keyring which is needed for installing "
-    echo "apt-transport-https on many Debian systems."
-    apt-get install -y debian-archive-keyring &> /dev/null
+    yum install -d0 -e0 -y curl
   fi
 }
 
@@ -63,43 +41,62 @@ install_debian_keyring ()
 detect_os ()
 {
   if [[ ( -z "${os}" ) && ( -z "${dist}" ) ]]; then
-    # some systems dont have lsb-release yet have the lsb_release binary and
-    # vice-versa
-    if [ -e /etc/lsb-release ]; then
-      . /etc/lsb-release
-
-      if [ "${ID}" = "raspbian" ]; then
-        os=${ID}
-        dist=`cut --delimiter='.' -f1 /etc/debian_version`
+    if [ -e /etc/os-release ]; then
+      . /etc/os-release
+      os=${ID}
+      if [ "${os}" = "poky" ]; then
+        dist=`echo ${VERSION_ID}`
+      elif [ "${os}" = "sles" ]; then
+        dist=`echo ${VERSION_ID}`
+      elif [ "${os}" = "opensuse" ]; then
+        dist=`echo ${VERSION_ID}`
+      elif [ "${os}" = "opensuse-leap" ]; then
+        os=opensuse
+        dist=`echo ${VERSION_ID}`
       else
-        os=${DISTRIB_ID}
-        dist=${DISTRIB_CODENAME}
-
-        if [ -z "$dist" ]; then
-          dist=${DISTRIB_RELEASE}
-        fi
+        dist=`echo ${VERSION_ID} | awk -F '.' '{ print $1 }'`
       fi
 
     elif [ `which lsb_release 2>/dev/null` ]; then
-      dist=`lsb_release -c | cut -f2`
+      # get major version (e.g. '5' or '6')
+      dist=`lsb_release -r | cut -f2 | awk -F '.' '{ print $1 }'`
+
+      # get os (e.g. 'centos', 'redhatenterpriseserver', etc)
       os=`lsb_release -i | cut -f2 | awk '{ print tolower($1) }'`
 
-    elif [ -e /etc/debian_version ]; then
-      # some Debians have jessie/sid in their /etc/debian_version
-      # while others have '6.0.7'
-      os=`cat /etc/issue | head -1 | awk '{ print tolower($1) }'`
-      if grep -q '/' /etc/debian_version; then
-        dist=`cut --delimiter='/' -f1 /etc/debian_version`
+    elif [ -e /etc/oracle-release ]; then
+      dist=`cut -f5 --delimiter=' ' /etc/oracle-release | awk -F '.' '{ print $1 }'`
+      os='ol'
+
+    elif [ -e /etc/fedora-release ]; then
+      dist=`cut -f3 --delimiter=' ' /etc/fedora-release`
+      os='fedora'
+
+    elif [ -e /etc/redhat-release ]; then
+      os_hint=`cat /etc/redhat-release  | awk '{ print tolower($1) }'`
+      if [ "${os_hint}" = "centos" ]; then
+        dist=`cat /etc/redhat-release | awk '{ print $3 }' | awk -F '.' '{ print $1 }'`
+        os='centos'
+      elif [ "${os_hint}" = "scientific" ]; then
+        dist=`cat /etc/redhat-release | awk '{ print $4 }' | awk -F '.' '{ print $1 }'`
+        os='scientific'
       else
-        dist=`cut --delimiter='.' -f1 /etc/debian_version`
+        dist=`cat /etc/redhat-release  | awk '{ print tolower($7) }' | cut -f1 --delimiter='.'`
+        os='redhatenterpriseserver'
       fi
 
     else
-      unknown_os
+      aws=`grep -q Amazon /etc/issue`
+      if [ "$?" = "0" ]; then
+        dist='6'
+        os='aws'
+      else
+        unknown_os
+      fi
     fi
   fi
 
-  if [ -z "$dist" ]; then
+  if [[ ( -z "${os}" ) || ( -z "${dist}" ) ]]; then
     unknown_os
   fi
 
@@ -107,46 +104,81 @@ detect_os ()
   os="${os// /}"
   dist="${dist// /}"
 
-  echo "Detected operating system as $os/$dist."
+  echo "Detected operating system as ${os}/${dist}."
+
+  if [ "${dist}" = "8" ]; then
+    _skip_pygpgme=1
+  else
+    _skip_pygpgme=0
+  fi
+}
+
+finalize_yum_repo ()
+{
+  if [ "$_skip_pygpgme" = 0 ]; then
+    echo "Installing pygpgme to verify GPG signatures..."
+    yum install -y pygpgme --disablerepo='gitlab_gitlab-ee'
+    pypgpme_check=`rpm -qa | grep -qw pygpgme`
+    if [ "$?" != "0" ]; then
+      echo
+      echo "WARNING: "
+      echo "The pygpgme package could not be installed. This means GPG verification is not possible for any RPM installed on your system. "
+      echo "To fix this, add a repository with pygpgme. Usualy, the EPEL repository for your system will have this. "
+      echo "More information: https://fedoraproject.org/wiki/EPEL#How_can_I_use_these_extra_packages.3F"
+      echo
+
+      # set the repo_gpgcheck option to 0
+      sed -i'' 's/repo_gpgcheck=1/repo_gpgcheck=0/' /etc/yum.repos.d/gitlab_gitlab-ee.repo
+    fi
+  fi
+
+  echo "Installing yum-utils..."
+  yum install -y yum-utils --disablerepo='gitlab_gitlab-ee'
+  yum_utils_check=`rpm -qa | grep -qw yum-utils`
+  if [ "$?" != "0" ]; then
+    echo
+    echo "WARNING: "
+    echo "The yum-utils package could not be installed. This means you may not be able to install source RPMs or use other yum features."
+    echo
+  fi
+
+  echo "Generating yum cache for gitlab_gitlab-ee..."
+  yum -q makecache -y --disablerepo='*' --enablerepo='gitlab_gitlab-ee'
+
+  echo "Generating yum cache for gitlab_gitlab-ee-source..."
+  yum -q makecache -y --disablerepo='*' --enablerepo='gitlab_gitlab-ee-source'
+}
+
+finalize_zypper_repo ()
+{
+  zypper --gpg-auto-import-keys refresh gitlab_gitlab-ee
+  zypper --gpg-auto-import-keys refresh gitlab_gitlab-ee-source
 }
 
 main ()
 {
   detect_os
   curl_check
-  gpg_check
-
-  # Need to first run apt-get update so that apt-transport-https can be
-  # installed
-  echo -n "Running apt-get update... "
-  apt-get update &> /dev/null
-  echo "done."
-
-  # Install the debian-archive-keyring package on debian systems so that
-  # apt-transport-https can be installed next
-  install_debian_keyring
-
-  echo -n "Installing apt-transport-https... "
-  apt-get install -y apt-transport-https &> /dev/null
-  echo "done."
 
 
-  gpg_key_url="https://packages.gitlab.com/gitlab/gitlab-ce/gpgkey"
-  apt_config_url="https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/config_file.list?os=${os}&dist=${dist}&source=script"
+  yum_repo_config_url="https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/config_file.repo?os=${os}&dist=${dist}&source=script"
 
-  apt_source_path="/etc/apt/sources.list.d/gitlab_gitlab-ce.list"
+  if [ "${os}" = "sles" ] || [ "${os}" = "opensuse" ]; then
+    yum_repo_path=/etc/zypp/repos.d/gitlab_gitlab-ee.repo
+  else
+    yum_repo_path=/etc/yum.repos.d/gitlab_gitlab-ee.repo
+  fi
 
-  echo -n "Installing $apt_source_path..."
+  echo "Downloading repository file: ${yum_repo_config_url}"
 
-  # create an apt config file for this repository
-  curl -sSf "${apt_config_url}" > $apt_source_path
+  curl -sSf "${yum_repo_config_url}" > $yum_repo_path
   curl_exit_code=$?
 
   if [ "$curl_exit_code" = "22" ]; then
     echo
     echo
     echo -n "Unable to download repo config from: "
-    echo "${apt_config_url}"
+    echo "${yum_repo_config_url}"
     echo
     echo "This usually happens if your operating system is not supported by "
     echo "packagecloud.io, or this script's OS detection failed."
@@ -154,46 +186,69 @@ main ()
     echo "You can override the OS detection by setting os= and dist= prior to running this script."
     echo "You can find a list of supported OSes and distributions on our website: https://packages.gitlab.com/docs#os_distro_version"
     echo
-    echo "For example, to force Ubuntu Trusty: os=ubuntu dist=trusty ./script.sh"
+    echo "For example, to force CentOS 6: os=el dist=6 ./script.sh"
     echo
     echo "If you are running a supported OS, please email support@packagecloud.io and report this."
-    [ -e $apt_source_path ] && rm $apt_source_path
+    [ -e $yum_repo_path ] && rm $yum_repo_path
     exit 1
   elif [ "$curl_exit_code" = "35" -o "$curl_exit_code" = "60" ]; then
+    echo
     echo "curl is unable to connect to packagecloud.io over TLS when running: "
-    echo "    curl ${apt_config_url}"
+    echo "    curl ${yum_repo_config_url}"
+    echo
     echo "This is usually due to one of two things:"
     echo
     echo " 1.) Missing CA root certificates (make sure the ca-certificates package is installed)"
     echo " 2.) An old version of libssl. Try upgrading libssl on your system to a more recent version"
     echo
     echo "Contact support@packagecloud.io with information about your system for help."
-    [ -e $apt_source_path ] && rm $apt_source_path
+    [ -e $yum_repo_path ] && rm $yum_repo_path
     exit 1
   elif [ "$curl_exit_code" -gt "0" ]; then
     echo
     echo "Unable to run: "
-    echo "    curl ${apt_config_url}"
+    echo "    curl ${yum_repo_config_url}"
     echo
     echo "Double check your curl installation and try again."
-    [ -e $apt_source_path ] && rm $apt_source_path
+    [ -e $yum_repo_path ] && rm $yum_repo_path
     exit 1
   else
     echo "done."
   fi
 
-  echo -n "Importing packagecloud gpg key... "
-  # import the gpg key
-  curl -L "${gpg_key_url}" 2> /dev/null | apt-key add - &>/dev/null
-  echo "done."
-
-  echo -n "Running apt-get update... "
-  # update apt on this system
-  apt-get update &> /dev/null
-  echo "done."
+  if [ "${os}" = "sles" ] || [ "${os}" = "opensuse" ]; then
+    finalize_zypper_repo
+  else
+    finalize_yum_repo
+  fi
 
   echo
   echo "The repository is setup! You can now install packages."
 }
 
 main
+#安装基础依赖
+    which policycoreutils-python >/dev/null 2>&1
+    if [ $? -ne 0 ];then
+        yum install -y policycoreutils-python
+    fi
+    which openssh-server >/dev/null 2>&1
+    if [ $? -ne 0 ];then
+        yum install -y openssh-server
+    fi
+    which postfix >/dev/null 2>&1
+    if [ $? -ne 0 ];then
+        yum install -y postfix
+    fi
+#启动服务
+    if [ ! "$(systemctl status sshd | systemctl enable sshd|grep Active | grep running)" ]; then
+        start_sshd
+    fi
+    if [ ! "$(systemctl status postfix |systemctl enable postfix| grep Active | grep running)" ]; then
+        start_postfix
+    fi
+#安装gitlab
+     which gitlab-ee >/dev/null 2>&1
+    if [ $? -ne 0 ];then
+        yum install -y gitlab-ee
+    fi 
