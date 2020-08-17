@@ -42,3 +42,8 @@ install 安装gitlab
 ./install_gitlab
 
 ```
+install 安装Jenkins
+```
+./install_jenkins
+
+```
