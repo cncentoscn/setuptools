@@ -39,18 +39,20 @@ fi
         yum install -y wget
     fi
 #启动服务
-    if [ ! "$(systemctl start sshd|systemctl status sshd |systemctl enable sshd| grep Active | grep running)" ]; then
-        start_sshd
-    fi
-    if [ ! "$(systemctl start postfix|systemctl status postfix |systemctl enable postfix| grep Active | grep running)" ]; then
-        start_postfix
-    fi
+function start_service() {
+systemctl start sshd 
+systemctl status sshd 
+systemctl enable sshd
+systemctl start postfix
+systemctl status postfix 
+systemctl enable postfix
+}
 #下载rpm包
-wget https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/gitlab-ce-13.2.4-ce.0.el7.x86_64.rpm
+curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sudo bash
 #安装gitlab
      which gitlab-ce >/dev/null 2>&1
     if [ $? -ne 0 ];then
-         rpm -ivh gitlab-ce-13.2.4-ce.0.el7.x86_64.rpm
+         yum install -y gitlab-ce
     fi 
 #防火墙
     if [ ! "$(firewall-cmd --list-all | grep http)" ]; then
@@ -58,6 +60,6 @@ wget https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/gitlab-ce-13.2.4-ce.
         firewall-cmd --reload
     fi
     if [ ! "$(firewall-cmd --list-all | grep ssh)" ]; then
-        firewall-cmd --permanent --add-service=ssh
+        firewall-cmd --permanent --add-service=https
         firewall-cmd --reload
     fi
