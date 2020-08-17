@@ -37,3 +37,8 @@ install 安装python3
 ./install_py3.sh
 
 ```
+install 安装gitlab
+```
+./install_gitlab
+
+```
