@@ -34,14 +34,15 @@ fi
     if [ $? -ne 0 ];then
         yum install -y curl 
     fi
+#启动服务
+    if [ ! "$(systemctl start sshd|systemctl status sshd |systemctl enable sshd| grep Active | grep running)" ]; then
+        start_sshd
+    fi
+    if [ ! "$(systemctl start postfix|systemctl status postfix |systemctl enable postfix| grep Active | grep running)" ]; then
+        start_postfix
+    fi
 #安装源
-cat >> /etc/yum.repos.d/gitlab-ce.repo <<EOF
-[gitlab-ce]
-name=Gitlab CE Repository
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el$releasever/
-gpgcheck=0
-enabled=1
-EOF
+curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rpm.sh | sudo bash
 #安装gitlab
      which gitlab-ee >/dev/null 2>&1
     if [ $? -ne 0 ];then
@@ -52,7 +53,7 @@ EOF
         firewall-cmd --permanent --add-service=http
         firewall-cmd --reload
     fi
-    if [ ! "$(firewall-cmd --list-all | grep https)" ]; then
-        firewall-cmd --permanent --add-service=https
+    if [ ! "$(firewall-cmd --list-all | grep ssh)" ]; then
+        firewall-cmd --permanent --add-service=ssh
         firewall-cmd --reload
     fi
