@@ -13,7 +13,6 @@ else
   echo -e "[\033[31m ERROR \033[0m] 请用 root 用户执行安装脚本"
   flag=1
 fi
-curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.rpm.sh | sudo bash
 #安装基础依赖
     which policycoreutils-python >/dev/null 2>&1
     if [ $? -ne 0 ];then
