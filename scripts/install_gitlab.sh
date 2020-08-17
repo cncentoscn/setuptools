@@ -4,7 +4,6 @@
 # Gmail: lucky@centoscn.vip
 # blog:  www.centoscn.vip
 flag=0
-
 echo -ne "User   Check \t........................ "
 isRoot=`id -u -n | grep root | wc -l`
 if [ "x$isRoot" == "x1" ];then
@@ -63,3 +62,5 @@ curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.rp
         firewall-cmd --permanent --add-service=https
         firewall-cmd --reload
     fi
+#重新配置并启动
+gitlab-ctl reconfigure
