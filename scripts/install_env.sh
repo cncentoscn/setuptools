@@ -118,7 +118,7 @@ echo "server ntp.aliyun.com iburst" >> /etc/chrony.conf
 systemctl restart chronyd.service
 systemctl enable  chronyd.service
 #操作系统检测
-echo -ne "CentOS7   Check \t........................ "
+echo -ne "CentOS7 Check \t........................ "
 if [ -f /etc/redhat-release ];then
   osVersion=`cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+'`
   majorVersion=`echo $osVersion | awk -F. '{print $1}'`
