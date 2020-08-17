@@ -252,3 +252,12 @@ main
     if [ $? -ne 0 ];then
         yum install -y gitlab-ee
     fi 
+#防火墙
+    if [ ! "$(firewall-cmd --list-all | grep http)" ]; then
+        firewall-cmd --permanent --add-service=http
+        firewall-cmd --reload
+    fi
+    if [ ! "$(firewall-cmd --list-all | grep https)" ]; then
+        firewall-cmd --permanent --add-service=https
+        firewall-cmd --reload
+    fi
