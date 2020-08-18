@@ -5,6 +5,7 @@
 - 全新安装的 Centos7 (7.x)
 - 需要连接 互联网
 - 使用 root 用户执行
+- 由于国内有墙，部分yum源会失效
 
 注: 脚本包含 selinux 和 firewalld 处理功能, 可以在 selinux 和 firewalld 开启的情况下正常使用
 
